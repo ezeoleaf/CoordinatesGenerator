@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Coordinates Generator</title>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/jquery.timer.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3&key=AIzaSyAHd6KyYBd0Ux6e7ureks9uHpANNhDBfP4&libraries=drawing"></script>
+	<script>
+    var map;
+    var drawingManager;
+
+	function initMap() {
+		map = new google.maps.Map(document.getElementById('map'), {
+			center: {lat: -34.397, lng: 150.644},
+			zoom: 8
+		});
+
+		drawingManager = new google.maps.drawing.DrawingManager({
+			drawingMode: google.maps.drawing.OverlayType.MARKER,
+			drawingControl: true,
+			drawingControlOptions: {
+			  position: google.maps.ControlPosition.TOP_CENTER,
+			  drawingModes: [
+			    google.maps.drawing.OverlayType.CIRCLE,
+			    google.maps.drawing.OverlayType.POLYGON,
+			    google.maps.drawing.OverlayType.RECTANGLE
+			  ]
+			}
+		});
+
+		drawingManager.setMap(map);
+
+		google.maps.event.addListener(drawingManager, 'circlecomplete', function(circle) {
+			var radius = circle.getRadius();
+		});
+
+		google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
+			alert("Rectangle");
+		});
+
+		google.maps.event.addListener(drawingManager, 'polygoncomplete', function(event) {
+			var coordinates;
+			
+		});
+
+	}
+
+	
+
+	$(document).ready(function(){
+		initMap();
+	})
+	</script>
+</head>
+<body>
+	<div class="container">
+		<div class="row">
+			<h1>Coordinate Generator</h1>
+		</div>
+		<div class="row">
+			<div class="col-xs-8" style="height:500px">
+				<div id="map" style="height:100%">
+					
+				</div>
+			</div>
+			<div class="col-xs-4">
+				<h4>Prueba</h4>
+			</div>
+		</div>
+		<div class="row col-xs-8">
+			<div class="col-xs-6">
+				<div class="radio">
+				<label>
+					<input type="radio" name="bottomToTop" id="bottomToTopB" value="b" checked>
+					Bottom
+				</label>
+				</div>
+				<div class="radio">
+				<label>
+					<input type="radio" name="bottomToTop" id="bottomToTopT" value="t">
+					Top
+				</label>
+				</div>
+			</div>
+			<div class="col-xs-6">
+				<div class="radio">
+				<label>
+					<input type="radio" name="leftToRight" id="leftToRightL" value="l" checked>
+					Left
+				</label>
+				</div>
+				<div class="radio">
+				<label>
+					<input type="radio" name="leftToRight" id="leftToRightR" value="r">
+					Right
+				</label>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
