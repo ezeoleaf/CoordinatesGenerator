@@ -13,6 +13,8 @@
 	<script>
     var map;
     var drawingManager;
+    var coordinates = {};
+    var shape;
 
 	function initMap() {
 		map = new google.maps.Map(document.getElementById('map'), {
@@ -36,20 +38,105 @@
 		drawingManager.setMap(map);
 
 		google.maps.event.addListener(drawingManager, 'circlecomplete', function(circle) {
-			var radius = circle.getRadius();
+			createShape(circle,'C');
 		});
 
 		google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
-			alert("Rectangle");
+			createShape(event,'R');
 		});
 
 		google.maps.event.addListener(drawingManager, 'polygoncomplete', function(event) {
-			var coordinates;
-			
+			createShape(event,'P');
+			generateCoordinates(event);
 		});
 
 	}
 
+	function createShape(data,type)
+	{
+
+		var coords = [];
+
+		var vData = data.latLngs.j[0].j;
+		for(var i = 0; i < vData.length;i++)
+		{
+			objectLocal = {
+				lat: vData[i].lat(),
+				lng: vData[i].lng()
+			};
+			coords.push(objectLocal);
+		}
+
+		console.log(coords);
+		
+		switch(type)
+		{
+			case 'P':
+				shape = new google.maps.Polygon({paths: coords});
+				break;
+			case 'R':
+				break;
+			case 'C':
+				break;
+		}
+
+		var latLong = {
+			lat: 0.000000,
+			lng: 0.000000
+		}
+		/*
+		if(google.maps.geometry.poly.containsLocation(latLong, shape))
+		{
+			alert('Contiene');
+		}
+		else
+		{
+			alert('No Contiene');
+		}
+		*/
+		google.maps.event.addListener(map, 'click', function(e) {
+			if(google.maps.geometry.poly.containsLocation(e.latLng, shape))
+			{
+				alert('Contiene');
+			}
+			else
+			{
+				alert('No contiene');
+			}
+	  	});
+		
+		console.log(shape);
+	}
+
+	function showCoordinatesWrap()
+	{
+
+	}
+
+	function showCoordinates()
+	{
+
+	}
+
+	function generateCoordinates(data)
+	{
+		
+
+		chooseDrawType();
+		
+	}
+
+	function chooseDrawType()
+	{
+		if($('#wrapCheck').is(':checked'))
+		{
+			showCoordinatesWrap();
+		}
+		else
+		{
+			showCoordinates();
+		}
+	}
 	
 
 	$(document).ready(function(){
@@ -63,13 +150,23 @@
 			<h1>Coordinate Generator</h1>
 		</div>
 		<div class="row">
-			<div class="col-xs-8" style="height:500px">
+			<div class="col-xs-8" style="height:400px">
 				<div id="map" style="height:100%">
 					
 				</div>
 			</div>
 			<div class="col-xs-4">
-				<h4>Prueba</h4>
+				<div class="form-group">
+					<div class="col-sm-12 bg-info" align="center">
+						<div class="checkbox">
+							<label>
+							<input id="wrapCheck" type="checkbox"> Wrap
+							</label>
+						</div>
+					</div>
+				
+					<textarea class="form-control" style="width:100%" rows="15">Coordinates</textarea>
+				</div>
 			</div>
 		</div>
 		<div class="row col-xs-8">
@@ -101,6 +198,9 @@
 				</label>
 				</div>
 			</div>
+		</div>
+		<div class="row col-xs-12">
+			<button type="button" class="btn btn-primary">Generate</button>
 		</div>
 	</div>
 </body>
