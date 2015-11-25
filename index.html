@@ -13,8 +13,10 @@
 	<script>
     var map;
     var drawingManager;
-    var coordinates = {};
+    var coordinates = [];
     var shape;
+    var south,north,east,west;
+    var southToNorth,westToEast,currentPosition;
 
 	function initMap() {
 		map = new google.maps.Map(document.getElementById('map'), {
@@ -28,8 +30,8 @@
 			drawingControlOptions: {
 			  position: google.maps.ControlPosition.TOP_CENTER,
 			  drawingModes: [
-			    google.maps.drawing.OverlayType.CIRCLE,
-			    google.maps.drawing.OverlayType.POLYGON,
+			    //google.maps.drawing.OverlayType.CIRCLE,
+			    //google.maps.drawing.OverlayType.POLYGON,
 			    google.maps.drawing.OverlayType.RECTANGLE
 			  ]
 			}
@@ -43,6 +45,7 @@
 
 		google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
 			createShape(event,'R');
+			generateCoordinates();
 		});
 
 		google.maps.event.addListener(drawingManager, 'polygoncomplete', function(event) {
@@ -56,7 +59,7 @@
 	{
 
 		var coords = [];
-
+		/*
 		var vData = data.latLngs.j[0].j;
 		for(var i = 0; i < vData.length;i++)
 		{
@@ -66,9 +69,23 @@
 			};
 			coords.push(objectLocal);
 		}
+		*/
+		north = data.bounds.getNorthEast().lat();
+		east = data.bounds.getNorthEast().lng();
+		south = data.bounds.getSouthWest().lat();
+		west = data.bounds.getSouthWest().lng();
 
-		console.log(coords);
-		
+
+		shape = new google.maps.Rectangle({
+		bounds: {
+			north: north,
+			south: south,
+			east: east,
+			west: west
+		}
+		});
+		console.log(shape);
+		/*
 		switch(type)
 		{
 			case 'P':
@@ -79,10 +96,16 @@
 			case 'C':
 				break;
 		}
-
-		var latLong = {
-			lat: 0.000000,
-			lng: 0.000000
+		*/
+		/*
+		var latLong = getLatLngFromString('-34.429567134705266','150.88623046875')
+		if(shape.getBounds().contains(latLong))
+		{
+			alert('Contiene');
+		}
+		else
+		{
+			alert('No Contiene');
 		}
 		/*
 		if(google.maps.geometry.poly.containsLocation(latLong, shape))
@@ -93,7 +116,7 @@
 		{
 			alert('No Contiene');
 		}
-		*/
+		/*
 		google.maps.event.addListener(map, 'click', function(e) {
 			if(google.maps.geometry.poly.containsLocation(e.latLng, shape))
 			{
@@ -106,28 +129,194 @@
 	  	});
 		
 		console.log(shape);
+		*/
 	}
 
-	function showCoordinatesWrap()
-	{
-
+	function getLatLngFromString(lat,lng) {
+		return new google.maps.LatLng(parseFloat(lat), parseFloat(lng));
 	}
 
-	function showCoordinates()
+	function getInitialPosition()
 	{
+		if($('#southToNorthS').is(':checked'))
+		{
+			southToNorth = 's';
+		}
+		else
+		{
+			southToNorth = 'n';
+		}
 
+		if($('#westToEastW').is(':checked'))
+		{
+			westToEast = 'w';
+		}
+		else
+		{
+			westToEast = 'e';
+		}
+
+		if(southToNorth == 's' && westToEast == 'w')
+		{
+			currentPosition = getLatLngFromString(south,west);
+		}
+
+		if(southToNorth == 's' && westToEast == 'e')
+		{
+			currentPosition = getLatLngFromString(south,east);
+		}
+
+		if(southToNorth == 'n' && westToEast == 'w')
+		{
+			currentPosition = getLatLngFromString(north,west);
+		}
+
+		if(southToNorth == 'n' && westToEast == 'e')
+		{
+			currentPosition = getLatLngFromString(north,east);
+		}
+
+		return currentPosition;
 	}
 
 	function generateCoordinates(data)
 	{
-		
+		var exit = false;
+		var countNotFound = 0;
+		var currentLat,currentLng,nextLat,nextLng;
+		var currentPosition = getInitialPosition();
+		do
+		{
+			if(shape.getBounds().contains(currentPosition))
+			{
+				coordinates.push(currentPosition);
 
+				if(countNotFound > 0)
+				{
+					countNotFound = 0;
+					southToNorth = (southToNorth == 's') ? 'n' : 's';
+				}
+
+				if(southToNorth == 's')
+				{
+					currentLat = currentPosition.lat();
+					currentLng = currentPosition.lng();
+
+					nextLat = currentLat + 0.00005;
+					nextLng = currentLng;
+				}
+				else
+				{
+					currentLat = currentPosition.lat();
+					currentLng = currentPosition.lng();
+
+					nextLat = currentLat - 0.00005;
+					nextLng = currentLng;	
+				}
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else
+			{
+				countNotFound++;
+				if(countNotFound < 2)
+				{
+					if(westToEast == 'e')
+					{
+						currentLat = currentPosition.lat();
+						currentLng = currentPosition.lng();
+
+						if(currentLat <= north && currentLat >= south)
+						{
+							nextLat = currentLat;							
+						}
+						else
+						{
+							if(southToNorth == 's')
+							{
+								nextLat = currentLat - 0.00005;
+							}
+							else
+							{
+								nextLat = currentLat + 0.00005;	
+							}
+						}
+
+						nextLng = currentLng - 0.00005;
+					}
+					else
+					{
+						currentLat = currentPosition.lat();
+						currentLng = currentPosition.lng();
+
+						if(currentLat <= north && currentLat >= south)
+						{
+							nextLat = currentLat;							
+						}
+						else
+						{
+							if(southToNorth == 's')
+							{
+								nextLat = currentLat - 0.00005;
+							}
+							else
+							{
+								nextLat = currentLat + 0.00005;	
+							}
+						}
+
+						nextLng = currentLng + 0.00005;
+					}
+					currentPosition = getLatLngFromString(nextLat,nextLng);
+				}
+				else
+				{
+					exit = true;
+				}
+				//Busco para la derecha o izquierda
+			}
+		}while(!exit);
+
+		console.log(coordinates);
 		chooseDrawType();
 		
 	}
 
+	function drawPath()
+	{
+		var positionsGenerated = new google.maps.Polyline({
+			path: coordinates,
+			geodesic: true,
+			strokeColor: '#FF0000',
+			strokeOpacity: 1.0,
+			strokeWeight: 2
+		});
+
+		positionsGenerated.setMap(map);
+	}
+
+	function showCoordinatesWrap()
+	{
+		var valText = '';
+		for(var i=0;i<coordinates.length;i++)
+		{
+			valText += coordinates[i].lat() +','+coordinates[i].lng() + ';';
+		}
+		$('#resultCoordinates').val(valText);
+	}
+
+	function showCoordinates()
+	{
+		var valText = '';
+		for(var i=0;i<coordinates.length;i++)
+		{
+			valText += coordinates[i].lat() +','+coordinates[i].lng() + '\n';
+		}
+		$('#resultCoordinates').val(valText);
+	}
+
 	function chooseDrawType()
 	{
+		drawPath();
 		if($('#wrapCheck').is(':checked'))
 		{
 			showCoordinatesWrap();
@@ -160,12 +349,12 @@
 					<div class="col-sm-12 bg-info" align="center">
 						<div class="checkbox">
 							<label>
-							<input id="wrapCheck" type="checkbox"> Wrap
+							<input id="wrapCheck" type="checkbox" onclick="chooseDrawType();"> Wrap
 							</label>
 						</div>
 					</div>
 				
-					<textarea class="form-control" style="width:100%" rows="15">Coordinates</textarea>
+					<textarea class="form-control" id="resultCoordinates" style="width:100%" rows="15">Coordinates</textarea>
 				</div>
 			</div>
 		</div>
@@ -173,28 +362,28 @@
 			<div class="col-xs-6">
 				<div class="radio">
 				<label>
-					<input type="radio" name="bottomToTop" id="bottomToTopB" value="b" checked>
-					Bottom
+					<input type="radio" name="bottomToTop" id="southToNorthS" value="s" checked>
+					South
 				</label>
 				</div>
 				<div class="radio">
 				<label>
-					<input type="radio" name="bottomToTop" id="bottomToTopT" value="t">
-					Top
+					<input type="radio" name="bottomToTop" id="southToNorthN" value="n">
+					North
 				</label>
 				</div>
 			</div>
 			<div class="col-xs-6">
 				<div class="radio">
 				<label>
-					<input type="radio" name="leftToRight" id="leftToRightL" value="l" checked>
-					Left
+					<input type="radio" name="leftToRight" id="westToEastW" value="w" checked>
+					West
 				</label>
 				</div>
 				<div class="radio">
 				<label>
-					<input type="radio" name="leftToRight" id="leftToRightR" value="r">
-					Right
+					<input type="radio" name="leftToRight" id="westToEastE" value="e">
+					East
 				</label>
 				</div>
 			</div>
