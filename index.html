@@ -4,11 +4,13 @@
 	<title>Coordinates Generator</title>
 	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
 	<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+	<link href="clusterize/clusterize.css" rel="stylesheet">
 	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<script src="js/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/jquery.timer.js"></script>
+	<script src="clusterize/clusterize.min.js"></script>
 	<script src="https://maps.googleapis.com/maps/api/js?v=3&key=AIzaSyAHd6KyYBd0Ux6e7ureks9uHpANNhDBfP4&libraries=drawing"></script>
 	<script>
     var map;
@@ -21,7 +23,7 @@
 	function initMap() {
 		map = new google.maps.Map(document.getElementById('map'), {
 			center: {lat: -34.397, lng: 150.644},
-			zoom: 8
+			zoom: 16
 		});
 
 		drawingManager = new google.maps.drawing.DrawingManager({
@@ -179,8 +181,20 @@
 		return currentPosition;
 	}
 
+	function getDistanceSouthToNorth()
+	{
+		var cantOfPointsSTN = 5;
+		var totalDistance = Math.abs(north - south);
+		var result = totalDistance / 5;
+		if(result.toString().length > 7)
+			result = parseFloat(result.toString().substring(0,7));
+
+		return result;
+	}
+
 	function generateCoordinates(data)
 	{
+		var distanceSTN = getDistanceSouthToNorth();
 		var exit = false;
 		var countNotFound = 0;
 		var currentLat,currentLng,nextLat,nextLng;
@@ -202,7 +216,7 @@
 					currentLat = currentPosition.lat();
 					currentLng = currentPosition.lng();
 
-					nextLat = currentLat + 0.00005;
+					nextLat = currentLat + distanceSTN;
 					nextLng = currentLng;
 				}
 				else
@@ -210,7 +224,7 @@
 					currentLat = currentPosition.lat();
 					currentLng = currentPosition.lng();
 
-					nextLat = currentLat - 0.00005;
+					nextLat = currentLat - distanceSTN;
 					nextLng = currentLng;	
 				}
 				currentPosition = getLatLngFromString(nextLat,nextLng);
@@ -233,15 +247,15 @@
 						{
 							if(southToNorth == 's')
 							{
-								nextLat = currentLat - 0.00005;
+								nextLat = currentLat - distanceSTN;
 							}
 							else
 							{
-								nextLat = currentLat + 0.00005;	
+								nextLat = currentLat + distanceSTN;	
 							}
 						}
 
-						nextLng = currentLng - 0.00005;
+						nextLng = currentLng - 0.0001;
 					}
 					else
 					{
@@ -256,15 +270,15 @@
 						{
 							if(southToNorth == 's')
 							{
-								nextLat = currentLat - 0.00005;
+								nextLat = currentLat - distanceSTN;
 							}
 							else
 							{
-								nextLat = currentLat + 0.00005;	
+								nextLat = currentLat + distanceSTN;	
 							}
 						}
 
-						nextLng = currentLng + 0.00005;
+						nextLng = currentLng + 0.0001;
 					}
 					currentPosition = getLatLngFromString(nextLat,nextLng);
 				}
@@ -283,15 +297,53 @@
 
 	function drawPath()
 	{
-		var positionsGenerated = new google.maps.Polyline({
-			path: coordinates,
-			geodesic: true,
-			strokeColor: '#FF0000',
-			strokeOpacity: 1.0,
-			strokeWeight: 2
-		});
 
-		positionsGenerated.setMap(map);
+		var initialPosition = 0;
+		var cantOfPoints = 25;
+		var noMorePositions = false;
+		var timer = $.timer(function(){
+			
+			var newCoordinates = [];
+
+			for(var i = initialPosition; i <= (initialPosition + cantOfPoints);i++)
+			{
+				newCoordinates.push(coordinates[i]);
+				if(i == (coordinates.length -1))
+				{
+					noMorePositions = true;
+					break;
+				}
+			}
+
+			if((initialPosition + cantOfPoints) < coordinates.length)
+			{
+				initialPosition += cantOfPoints;
+			}
+			else
+			{
+				initialPosition = initialPosition + (coordinates.length - initialPosition);
+			}
+			
+
+			var positionsGenerated = new google.maps.Polyline({
+				path: newCoordinates,
+				geodesic: true,
+				strokeColor: '#FF0000',
+				strokeOpacity: 1.0,
+				strokeWeight: 2
+			});
+
+			positionsGenerated.setMap(map);
+
+			if(noMorePositions)
+			{
+				timer.stop();
+			}
+
+		},500,true);
+		
+
+		
 	}
 
 	function showCoordinatesWrap()
@@ -306,12 +358,21 @@
 
 	function showCoordinates()
 	{
+		var data = [];
+
 		var valText = '';
 		for(var i=0;i<coordinates.length;i++)
 		{
-			valText += coordinates[i].lat() +','+coordinates[i].lng() + '\n';
+			var currentData = '<li>'+coordinates[i].lat() +','+coordinates[i].lng() + '</li>';
+			data.push(currentData);
+			//valText += coordinates[i].lat() +','+coordinates[i].lng() + '\n';
 		}
-		$('#resultCoordinates').val(valText);
+		//$('#resultCoordinates').val(valText);
+		var clusterize = new Clusterize({
+			rows: data,
+			scrollId: 'scrollArea',
+			contentId: 'contentArea'
+		});
 	}
 
 	function chooseDrawType()
@@ -353,8 +414,12 @@
 							</label>
 						</div>
 					</div>
-				
-					<textarea class="form-control" id="resultCoordinates" style="width:100%" rows="15">Coordinates</textarea>
+					<div id="scrollArea" class="col-sm-12 clusterize-scroll" style="width:100%;">
+						<ul id="contentArea" class="clusterize-content" style="width:100%;list-style-type:none;padding-left:0px;text-align:left;">
+							<li class="clusterize-no-data">Loading data…</li>
+						</ul>
+					</div>
+					<!--textarea class="form-control" id="resultCoordinates" style="width:100%" rows="15">Coordinates</textarea-->
 				</div>
 			</div>
 		</div>
