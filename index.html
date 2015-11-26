@@ -16,9 +16,10 @@
     var map;
     var drawingManager;
     var coordinates = [];
-    var shape;
+    var shape = null;
     var south,north,east,west;
     var southToNorth,westToEast,currentPosition;
+    var positionsGenerated;
 
 	function initMap() {
 		map = new google.maps.Map(document.getElementById('map'), {
@@ -47,31 +48,34 @@
 
 		google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
 			createShape(event,'R');
-			generateCoordinates();
+			//generateCoordinates();
 		});
+
 
 		google.maps.event.addListener(drawingManager, 'polygoncomplete', function(event) {
 			createShape(event,'P');
-			generateCoordinates(event);
+			//generateCoordinates(event);
 		});
+
+	}
+
+	function cleanShape()
+	{
+		shape.setMap(null);
+		positionsGenerated.setMap(null);
 
 	}
 
 	function createShape(data,type)
 	{
-
-		var coords = [];
-		/*
-		var vData = data.latLngs.j[0].j;
-		for(var i = 0; i < vData.length;i++)
+		
+		if(shape != null)
 		{
-			objectLocal = {
-				lat: vData[i].lat(),
-				lng: vData[i].lng()
-			};
-			coords.push(objectLocal);
+			cleanShape();
 		}
-		*/
+		
+		var coords = [];
+		
 		north = data.bounds.getNorthEast().lat();
 		east = data.bounds.getNorthEast().lng();
 		south = data.bounds.getSouthWest().lat();
@@ -86,52 +90,7 @@
 			west: west
 		}
 		});
-		console.log(shape);
-		/*
-		switch(type)
-		{
-			case 'P':
-				shape = new google.maps.Polygon({paths: coords});
-				break;
-			case 'R':
-				break;
-			case 'C':
-				break;
-		}
-		*/
-		/*
-		var latLong = getLatLngFromString('-34.429567134705266','150.88623046875')
-		if(shape.getBounds().contains(latLong))
-		{
-			alert('Contiene');
-		}
-		else
-		{
-			alert('No Contiene');
-		}
-		/*
-		if(google.maps.geometry.poly.containsLocation(latLong, shape))
-		{
-			alert('Contiene');
-		}
-		else
-		{
-			alert('No Contiene');
-		}
-		/*
-		google.maps.event.addListener(map, 'click', function(e) {
-			if(google.maps.geometry.poly.containsLocation(e.latLng, shape))
-			{
-				alert('Contiene');
-			}
-			else
-			{
-				alert('No contiene');
-			}
-	  	});
 		
-		console.log(shape);
-		*/
 	}
 
 	function getLatLngFromString(lat,lng) {
@@ -192,7 +151,7 @@
 		return result;
 	}
 
-	function generateCoordinates(data)
+	function generateCoordinates()
 	{
 		var distanceSTN = getDistanceSouthToNorth();
 		var exit = false;
@@ -286,11 +245,9 @@
 				{
 					exit = true;
 				}
-				//Busco para la derecha o izquierda
 			}
 		}while(!exit);
 
-		console.log(coordinates);
 		chooseDrawType();
 		
 	}
@@ -325,7 +282,7 @@
 			}
 			
 
-			var positionsGenerated = new google.maps.Polyline({
+			positionsGenerated = new google.maps.Polyline({
 				path: newCoordinates,
 				geodesic: true,
 				strokeColor: '#FF0000',
@@ -387,6 +344,38 @@
 			showCoordinates();
 		}
 	}
+
+	function locateMe()
+	{
+
+		var infoWindow = new google.maps.InfoWindow({map: map});
+
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(function(position) {
+				var pos = {
+				lat: position.coords.latitude,
+				lng: position.coords.longitude
+				};
+
+		//infoWindow.setPosition(pos);
+		//infoWindow.setContent('Location found.');
+				map.setCenter(pos);
+			}, function() {
+				handleLocationError(true, infoWindow, map.getCenter());
+			});
+		}
+		else
+		{
+		// Browser doesn't support Geolocation
+		handleLocationError(false, infoWindow, map.getCenter());
+		}
+	}
+
+	function handleLocationError(browserHasGeolocation, infoWindow, pos) 
+	{
+		infoWindow.setPosition(pos);
+		infoWindow.setContent(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
+	}
 	
 
 	$(document).ready(function(){
@@ -398,6 +387,9 @@
 	<div class="container">
 		<div class="row">
 			<h1>Coordinate Generator</h1>
+		</div>
+		<div class="row col-xs-8" align="center">
+			<button type="button" class="btn btn-success" onClick="locateMe();">Locate Me!</button>
 		</div>
 		<div class="row">
 			<div class="col-xs-8" style="height:400px">
@@ -454,7 +446,7 @@
 			</div>
 		</div>
 		<div class="row col-xs-12">
-			<button type="button" class="btn btn-primary">Generate</button>
+			<button type="button" class="btn btn-primary" onClick="generateCoordinates();">Generate</button>
 		</div>
 	</div>
 </body>
