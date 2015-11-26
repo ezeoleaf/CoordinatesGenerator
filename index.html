@@ -4,6 +4,7 @@
 	<title>Coordinates Generator</title>
 	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
 	<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+	<link rel="stylesheet" type="text/css" href="css/animate.css">
 	<link href="clusterize/clusterize.css" rel="stylesheet">
 	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -11,6 +12,8 @@
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/jquery.timer.js"></script>
 	<script src="clusterize/clusterize.min.js"></script>
+	<script src="js/noty/packaged/jquery.noty.packaged.min.js"></script>
+	<script src="js/noty/themes/bootstrap.js"></script>
 	<script src="https://maps.googleapis.com/maps/api/js?v=3&key=AIzaSyAHd6KyYBd0Ux6e7ureks9uHpANNhDBfP4&libraries=drawing"></script>
 	<script>
     var map;
@@ -20,6 +23,10 @@
     var south,north,east,west;
     var southToNorth,westToEast,currentPosition;
     var positionsGenerated;
+    var clusterize;
+    var positionsGenerated;
+    var cantOfPositions;
+    var generated = false;
 
 	function initMap() {
 		map = new google.maps.Map(document.getElementById('map'), {
@@ -28,7 +35,6 @@
 		});
 
 		drawingManager = new google.maps.drawing.DrawingManager({
-			drawingMode: google.maps.drawing.OverlayType.MARKER,
 			drawingControl: true,
 			drawingControlOptions: {
 			  position: google.maps.ControlPosition.TOP_CENTER,
@@ -43,17 +49,17 @@
 		drawingManager.setMap(map);
 
 		google.maps.event.addListener(drawingManager, 'circlecomplete', function(circle) {
-			createShape(circle,'C');
+			createShape(circle);
 		});
 
 		google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
-			createShape(event,'R');
+			createShape(event);
 			//generateCoordinates();
 		});
 
 
 		google.maps.event.addListener(drawingManager, 'polygoncomplete', function(event) {
-			createShape(event,'P');
+			createShape(event);
 			//generateCoordinates(event);
 		});
 
@@ -62,11 +68,9 @@
 	function cleanShape()
 	{
 		shape.setMap(null);
-		positionsGenerated.setMap(null);
-
 	}
 
-	function createShape(data,type)
+	function createShape(data)
 	{
 		
 		if(shape != null)
@@ -83,14 +87,27 @@
 
 
 		shape = new google.maps.Rectangle({
-		bounds: {
-			north: north,
-			south: south,
-			east: east,
-			west: west
-		}
+			bounds: {
+				north: north,
+				south: south,
+				east: east,
+				west: west
+			}
 		});
-		
+
+		drawingManager.setMap(null);
+		/*
+		drawingManager = new google.maps.drawing.DrawingManager({
+			drawingControl: true,
+			drawingControlOptions: {
+				position: google.maps.ControlPosition.TOP_CENTER,
+				drawingModes: none
+			}
+		});
+
+		drawingManager.setMap(map);
+		*/
+
 	}
 
 	function getLatLngFromString(lat,lng) {
@@ -153,102 +170,161 @@
 
 	function generateCoordinates()
 	{
-		var distanceSTN = getDistanceSouthToNorth();
-		var exit = false;
-		var countNotFound = 0;
-		var currentLat,currentLng,nextLat,nextLng;
-		var currentPosition = getInitialPosition();
-		do
+		if(shape != null && !generated)
 		{
-			if(shape.getBounds().contains(currentPosition))
+			coordinates = [];
+			var distanceSTN = getDistanceSouthToNorth();
+			var exit = false;
+			var countNotFound = 0;
+			var currentLat,currentLng,nextLat,nextLng;
+			var currentPosition = getInitialPosition();
+			do
 			{
-				coordinates.push(currentPosition);
-
-				if(countNotFound > 0)
+				if(shape.getBounds().contains(currentPosition))
 				{
-					countNotFound = 0;
-					southToNorth = (southToNorth == 's') ? 'n' : 's';
-				}
+					coordinates.push(currentPosition);
 
-				if(southToNorth == 's')
-				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
+					if(countNotFound > 0)
+					{
+						countNotFound = 0;
+						southToNorth = (southToNorth == 's') ? 'n' : 's';
+					}
 
-					nextLat = currentLat + distanceSTN;
-					nextLng = currentLng;
-				}
-				else
-				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
-
-					nextLat = currentLat - distanceSTN;
-					nextLng = currentLng;	
-				}
-				currentPosition = getLatLngFromString(nextLat,nextLng);
-			}
-			else
-			{
-				countNotFound++;
-				if(countNotFound < 2)
-				{
-					if(westToEast == 'e')
+					if(southToNorth == 's')
 					{
 						currentLat = currentPosition.lat();
 						currentLng = currentPosition.lng();
 
-						if(currentLat <= north && currentLat >= south)
-						{
-							nextLat = currentLat;							
-						}
-						else
-						{
-							if(southToNorth == 's')
-							{
-								nextLat = currentLat - distanceSTN;
-							}
-							else
-							{
-								nextLat = currentLat + distanceSTN;	
-							}
-						}
-
-						nextLng = currentLng - 0.0001;
+						nextLat = currentLat + distanceSTN;
+						nextLng = currentLng;
 					}
 					else
 					{
 						currentLat = currentPosition.lat();
 						currentLng = currentPosition.lng();
 
-						if(currentLat <= north && currentLat >= south)
-						{
-							nextLat = currentLat;							
-						}
-						else
-						{
-							if(southToNorth == 's')
-							{
-								nextLat = currentLat - distanceSTN;
-							}
-							else
-							{
-								nextLat = currentLat + distanceSTN;	
-							}
-						}
-
-						nextLng = currentLng + 0.0001;
+						nextLat = currentLat - distanceSTN;
+						nextLng = currentLng;	
 					}
 					currentPosition = getLatLngFromString(nextLat,nextLng);
 				}
 				else
 				{
-					exit = true;
-				}
-			}
-		}while(!exit);
+					countNotFound++;
+					if(countNotFound < 2)
+					{
+						if(westToEast == 'e')
+						{
+							currentLat = currentPosition.lat();
+							currentLng = currentPosition.lng();
 
-		chooseDrawType();
+							if(currentLat <= north && currentLat >= south)
+							{
+								nextLat = currentLat;							
+							}
+							else
+							{
+								if(southToNorth == 's')
+								{
+									nextLat = currentLat - distanceSTN;
+								}
+								else
+								{
+									nextLat = currentLat + distanceSTN;	
+								}
+							}
+
+							nextLng = currentLng - 0.0001;
+						}
+						else
+						{
+							currentLat = currentPosition.lat();
+							currentLng = currentPosition.lng();
+
+							if(currentLat <= north && currentLat >= south)
+							{
+								nextLat = currentLat;							
+							}
+							else
+							{
+								if(southToNorth == 's')
+								{
+									nextLat = currentLat - distanceSTN;
+								}
+								else
+								{
+									nextLat = currentLat + distanceSTN;	
+								}
+							}
+
+							nextLng = currentLng + 0.0001;
+						}
+						currentPosition = getLatLngFromString(nextLat,nextLng);
+					}
+					else
+					{
+						exit = true;
+					}
+				}
+			}while(!exit);
+
+			generated = true;
+
+			chooseDrawType();
+		}
+		else if(shape == null)
+		{
+			var n = noty({
+			text: 'You must draw a rectangle!',
+			type: 'alert',
+				animation: {
+					open: {height: 'toggle'}, // jQuery animate function property object
+					close: {height: 'toggle'}, // jQuery animate function property object
+					easing: 'swing', // easing
+					speed: 500 // opening & closing animation speed
+				}
+			});
+		}
+		else if(generated)
+		{
+			var n = noty({
+			text: 'The positions are already generated!',
+			layout: 'top',
+		    theme: 'defaultTheme', // or 'relax'
+		    type: 'alert',
+			animation: {
+				open: 'animated bounceInLeft', // Animate.css class names
+				close: 'animated bounceOutLeft', // Animate.css class names
+				easing: 'swing', // unavailable - no need
+				speed: 500 // unavailable - no need
+			}
+			});
+		}
+		else
+		{
+			$(document).noty({
+				text: 'A wild bug appear! Please contact me!',
+				type: 'alert',
+				animation: {
+					open: {height: 'toggle'}, // jQuery animate function property object
+					close: {height: 'toggle'}, // jQuery animate function property object
+					easing: 'swing', // easing
+					speed: 500 // opening & closing animation speed
+				}
+			});
+			/*
+			var n = noty({
+			text: 'A wild bug appear! Please contact me!',
+			type: 'alert',
+				animation: {
+					open: {height: 'toggle'}, // jQuery animate function property object
+					close: {height: 'toggle'}, // jQuery animate function property object
+					easing: 'swing', // easing
+					speed: 500 // opening & closing animation speed
+				}
+			});
+			*/
+		}
 		
 	}
 
@@ -258,6 +334,8 @@
 		var initialPosition = 0;
 		var cantOfPoints = 25;
 		var noMorePositions = false;
+		positionsGenerated = []
+		cantOfPositions = -1;
 		var timer = $.timer(function(){
 			
 			var newCoordinates = [];
@@ -281,16 +359,17 @@
 				initialPosition = initialPosition + (coordinates.length - initialPosition);
 			}
 			
+			cantOfPositions++;
 
-			positionsGenerated = new google.maps.Polyline({
+			positionsGenerated.push(new google.maps.Polyline({
 				path: newCoordinates,
 				geodesic: true,
 				strokeColor: '#FF0000',
 				strokeOpacity: 1.0,
 				strokeWeight: 2
-			});
+			}));
 
-			positionsGenerated.setMap(map);
+			positionsGenerated[cantOfPositions].setMap(map);
 
 			if(noMorePositions)
 			{
@@ -325,7 +404,7 @@
 			//valText += coordinates[i].lat() +','+coordinates[i].lng() + '\n';
 		}
 		//$('#resultCoordinates').val(valText);
-		var clusterize = new Clusterize({
+		clusterize = new Clusterize({
 			rows: data,
 			scrollId: 'scrollArea',
 			contentId: 'contentArea'
@@ -377,6 +456,26 @@
 		infoWindow.setContent(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
 	}
 	
+	function resetCoordinates()
+	{
+		for(var i = 0; i <= cantOfPositions;i++)
+		{
+			positionsGenerated[i].setMap(null);
+		}
+		shape.setMap(null);
+		shape = null;
+
+		clusterize.clear();
+
+		generated = false;
+
+		drawingManager.setOptions({
+			drawingControl: true
+		});
+
+		initMap();
+		
+	}
 
 	$(document).ready(function(){
 		initMap();
@@ -446,6 +545,7 @@
 			</div>
 		</div>
 		<div class="row col-xs-12">
+			<button type="button" class="btn btn-primary" onClick="resetCoordinates();">Reset</button>
 			<button type="button" class="btn btn-primary" onClick="generateCoordinates();">Generate</button>
 		</div>
 	</div>
