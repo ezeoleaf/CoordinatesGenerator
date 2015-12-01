@@ -11,6 +11,7 @@
 	<script src="js/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/jquery.timer.js"></script>
+	<script src="js/clipboard.min.js"></script>
 	<script src="clusterize/clusterize.min.js"></script>
 	<script src="js/noty/packaged/jquery.noty.packaged.min.js"></script>
 	<script src="js/noty/themes/bootstrap.js"></script>
@@ -19,6 +20,11 @@
 	<script>
 	$(document).ready(function(){
 		initMap();
+		var clipboard = new Clipboard('#btnCopy');
+		var btnCopyHeight = $('#divBtnCopy').height();
+		var headerHeight = $('#divCoordinateHeader').height();
+		var contentHeigth = $('#idMap').height() - btnCopyHeight - headerHeight - 10;
+		$('#contentArea').css('height',contentHeigth+'px');
 	})
 	</script>
 </head>
@@ -27,19 +33,24 @@
 		<div class="row">
 			<h1>Coordinate Generator</h1>
 		</div>
-		<div class="row col-xs-8" align="center">
+		<div class="row col-xs-12 col-sm-12 col-md-8" align="center">
 			<button type="button" class="btn btn-success" onClick="locateMe();">Locate Me!</button>
+			
 		</div>
-		<div class="row col-xs-8 col-sm-8 col-md-8" align="center">
+		<br>
+		<br>
+		<div class="row col-xs-12 col-sm-12 col-md-4 col-md-offset-2" align="center">
 			<input id="pac-input" class="controls form-control" type="text" placeholder="Search Box">
 		</div>
+		<br>
+		<br>
 		<div class="row">
-			<div class="col-xs-8" style="height:400px">
+			<div class="col-xs-12 col-sm-12 col-md-8" id="idMap" style="height:380px">
 				<div id="map" style="height:100%">
 					
 				</div>
 			</div>
-			<div class="col-xs-4">
+			<div class="col-xs-12 col-sm-12 col-md-4">
 				<div class="form-group">
 					<!--div class="col-sm-12 bg-info" align="center">
 						<div class="checkbox">
@@ -48,15 +59,23 @@
 							</label>
 						</div>
 					</div-->
-					<div class="col-sm-12 bg-info" align="center">
+					<div class="row col-xs-12" align="center" id="divBtnCopy">
+						<button class="btn btn-info" id="btnCopy" data-clipboard-target="#resultCoordinates">
+							Copy!
+						</button>
+					</div>
+					<br><br>
+					<div class="col-sm-12 bg-info" align="center" id="divCoordinateHeader">
 						<label>Coordinates</label>
 					</div>
+					
 					<div id="scrollArea" class="col-sm-12 clusterize-scroll" style="width:100%;">
 						<ul id="contentArea" class="clusterize-content" style="width:100%;list-style-type:none;padding-left:0px;text-align:left;">
 							<li class="clusterize-no-data">Waiting to load data…</li>
 						</ul>
 					</div>
-					<!--textarea class="form-control" id="resultCoordinates" style="width:100%" rows="15">Coordinates</textarea-->
+					<div id="resultCoordinates" style="height: 0px"></div>
+					<!--textarea class="form-control" id="resultCoordinates" style="width:100%;height:0px" rows="0">Coordinates</textarea-->
 				</div>
 			</div>
 		</div>
@@ -90,7 +109,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="row col-xs-12">
+		<div class="row col-xs-12" align="center">
 			<button type="button" class="btn btn-primary" onClick="resetCoordinates();">Reset</button>
 			<button type="button" class="btn btn-primary" onClick="generateCoordinates();">Generate</button>
 		</div>
