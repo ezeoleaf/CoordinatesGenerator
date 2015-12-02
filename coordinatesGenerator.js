@@ -99,7 +99,7 @@ function setContentHeight()
 {
 	var btnCopyHeight = $('#divBtnCopy').height();
 	var headerHeight = $('#divCoordinateHeader').height();
-	var contentHeigth = $('#idMap').height() - btnCopyHeight - headerHeight - 10;
+	var contentHeigth = $('#map').height() - btnCopyHeight - headerHeight - 15;
 	$('#contentArea').css('height',contentHeigth+'px');
 }
 

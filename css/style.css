@@ -1,0 +1,33 @@
+#headerText
+{
+	font-family: oldlondon;
+	font-size: 40px;
+}
+
+body
+{
+	background-color: #EEE;
+}
+
+.container
+{
+	background-color: white;
+}
+
+@font-face {
+    font-family: cartographer;
+    src: url(../fonts/Cartographer.ttf);
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: magnacarta;
+    src: url(../fonts/Magna_Carta.ttf);
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: oldlondon;
+    src: url(../fonts/OldLondon.ttf);
+    font-weight: bold;
+}
