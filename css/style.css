@@ -31,3 +31,13 @@ body
     src: url(../fonts/OldLondon.ttf);
     font-weight: bold;
 }
+
+.noty_message
+{
+	background-color: #FF5B57;
+}
+
+.noty_text
+{
+	color: white;
+}

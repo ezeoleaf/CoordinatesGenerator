@@ -10,11 +10,13 @@ var clusterize = null;
 var positionsGenerated;
 var cantOfPositions;
 var generated = false;
-var globalLat = -34.397;
-var globalLng = 150.644;
+var globalLat = -32.4127198;
+var globalLng = -63.232826;
 var timer = null;
 var polygon = null;
 var polygonCoordinates = [];
+var westToEastDistance = 0;
+var southToNorthDistance = 0;
 
 function initMap() {
 	map = new google.maps.Map(document.getElementById('map'), {
@@ -147,6 +149,8 @@ function createPolygon(data)
 		}
 	});
 
+	getDistancePolygon();
+
 	drawingManager.setMap(null);
 }
 
@@ -157,6 +161,53 @@ Array.prototype.max = function() {
 Array.prototype.min = function() {
 	return Math.min.apply(null, this);
 };
+
+function getDistancePolygon()
+{
+	var origin = getLatLngFromString(south, east);
+	var destination = getLatLngFromString(south, west);
+
+	var service = new google.maps.DistanceMatrixService();
+	service.getDistanceMatrix(
+	{
+		origins: [origin],
+		destinations: [destination],
+		travelMode: google.maps.TravelMode.WALKING,
+	}, callbackWestToEast);
+
+	origin = getLatLngFromString(south, east);
+	destination = getLatLngFromString(north, east);
+
+	service.getDistanceMatrix(
+	{
+		origins: [origin],
+		destinations: [destination],
+		travelMode: google.maps.TravelMode.WALKING,
+	}, callbackSouthToNorth);
+}
+
+function callbackWestToEast(response, status) {
+	if(status == 'OK')
+		westToEastDistance = response.rows[0].elements[0].distance.value;
+	else
+		westToEastDistance = 10000;
+}
+
+function callbackSouthToNorth(response, status) {
+	if(status == 'OK')
+		southToNorthDistance = response.rows[0].elements[0].distance.value;
+	else
+		southToNorthDistance = 10000;
+}
+
+function isPolygonValid()
+{
+	var totalDistance = westToEastDistance + southToNorthDistance;
+	if(totalDistance > 4000)
+		return false;
+	else
+		return true;
+}
 
 function createShape(data)
 {
@@ -431,7 +482,14 @@ function generateCoordinates()
 		}
 		else
 		{
-			generateCoordinatesPolygon();
+			if(isPolygonValid())
+			{
+				generateCoordinatesPolygon();	
+			}
+			else
+			{
+				showNoty('danger','For performance purpoise, please draw a smaller polygon or a rectangle');
+			}
 		}	
 	}
 	else if(shape == null)
@@ -472,14 +530,14 @@ function showNoty(type,text)
 		text: text,
 		type: type,
 		theme: 'defaultTheme', // or 'relax'
-		template: '<div class="noty_message '+bgClass+'"><span class="noty_text"></span><div class="noty_close"></div></div>',
+		template: '<div class="noty_message '+bgClass+'"><span class="glyphicon glyphicon-warning-sign" style="color: white" aria-hidden="true"></span><b><span class="noty_text"></span><div class="noty_close"></b></div></div>',
 		animation: {
 			open: {height: 'toggle'}, // jQuery animate function property object
 			close: {height: 'toggle'}, // jQuery animate function property object
 			easing: 'swing', // easing
-			speed: 1500 // opening & closing animation speed
+			speed: 500 // opening & closing animation speed
 		},
-		timeout: 10,
+		timeout: 2000,
 	});
 }
 
@@ -567,10 +625,11 @@ function showCoordinates()
 		data.push(currentData);
 	}
 
+/*
 	$('#resultCoordinates').html(valText);
 	$('#btnCopy').click();
 	$('#resultCoordinates').hide();
-	
+*/	
 	clusterize = new Clusterize({
 		rows: data,
 		scrollId: 'scrollArea',
