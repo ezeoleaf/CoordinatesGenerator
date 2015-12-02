@@ -1,4 +1,4 @@
-var colors = ['#FF0000','#00FF00','#0000FF'];
+var colors = ['#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF'];
 var map;
 var drawingManager;
 var coordinates = [];
@@ -93,6 +93,28 @@ function initMap() {
 		globalLat = bounds.O.O;
 		globalLng = bounds.j.O;
 	});
+}
+
+function setContentHeight()
+{
+	var btnCopyHeight = $('#divBtnCopy').height();
+	var headerHeight = $('#divCoordinateHeader').height();
+	var contentHeigth = $('#idMap').height() - btnCopyHeight - headerHeight - 10;
+	$('#contentArea').css('height',contentHeigth+'px');
+}
+
+var oneClick = true;
+
+function copyCoordinates()
+{
+	$('#resultCoordinates').show();
+	if(oneClick)
+	{
+		oneClick = false;
+		$('#btnCopy').click();
+	}
+	
+	$('#resultCoordinates').hide();
 }
 
 function createPolygon(data)

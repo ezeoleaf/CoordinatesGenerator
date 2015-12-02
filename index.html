@@ -21,10 +21,7 @@
 	$(document).ready(function(){
 		initMap();
 		var clipboard = new Clipboard('#btnCopy');
-		var btnCopyHeight = $('#divBtnCopy').height();
-		var headerHeight = $('#divCoordinateHeader').height();
-		var contentHeigth = $('#idMap').height() - btnCopyHeight - headerHeight - 10;
-		$('#contentArea').css('height',contentHeigth+'px');
+		setContentHeight();
 	})
 	</script>
 </head>
