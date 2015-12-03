@@ -53,9 +53,6 @@ function initMap() {
 
 	var input = document.getElementById('pac-input');
 	var searchBox = new google.maps.places.SearchBox(input);
-	//map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-
-	// Bias the SearchBox results towards current map's viewport.
 	
 	map.addListener('bounds_changed', function() {
 		searchBox.setBounds(map.getBounds());
@@ -63,9 +60,7 @@ function initMap() {
 	
 
 	var markers = [];
-	// [START region_getplaces]
-	// Listen for the event fired when the user selects a prediction and retrieve
-	// more details for that place.
+	
 	searchBox.addListener('places_changed', function() {
 		var places = searchBox.getPlaces();
 
@@ -73,7 +68,6 @@ function initMap() {
 			return;
 		}
 
-		// For each place, get the icon, name and location.
 		var bounds = new google.maps.LatLngBounds();
 		places.forEach(function(place) {
 			var icon = {
@@ -85,7 +79,6 @@ function initMap() {
 		};
 		  
 		if (place.geometry.viewport) {
-			// Only geocodes have viewport.
 			bounds.union(place.geometry.viewport);
 		} else {
 			bounds.extend(place.geometry.location);
@@ -134,7 +127,7 @@ function createPolygon(data)
 	}
 
 	polygon = new google.maps.Polygon({paths: coordinatesPolygon});
-	//For the polygon, get south, north, west, east
+	
 	south = Math.min.apply(null, latPolygon);
 	north = Math.max.apply(null, latPolygon);
 	east = Math.max.apply(null, lngPolygon);
@@ -532,12 +525,12 @@ function showNoty(type,text)
 		theme: 'defaultTheme', // or 'relax'
 		template: '<div class="noty_message '+bgClass+'"><span class="glyphicon glyphicon-warning-sign" style="color: white" aria-hidden="true"></span><b><span class="noty_text"></span><div class="noty_close"></b></div></div>',
 		animation: {
-			open: {height: 'toggle'}, // jQuery animate function property object
-			close: {height: 'toggle'}, // jQuery animate function property object
+			open: 'animated pulse', // Animate.css class names
+			close: 'animated bounceOutLeft', // Animate.css class names
 			easing: 'swing', // easing
 			speed: 500 // opening & closing animation speed
 		},
-		timeout: 2000,
+		timeout: 3000,
 	});
 }
 
@@ -615,7 +608,6 @@ function showCoordinates()
 {
 	var data = [];
 	var valText = '';
-	//console.log(coordinates.length);
 
 	for(var i=0;i<coordinates.length;i++)
 	{
@@ -625,17 +617,15 @@ function showCoordinates()
 		data.push(currentData);
 	}
 
-/*
 	$('#resultCoordinates').html(valText);
 	$('#btnCopy').click();
 	$('#resultCoordinates').hide();
-*/	
+
 	clusterize = new Clusterize({
 		rows: data,
 		scrollId: 'scrollArea',
 		contentId: 'contentArea'
 	});
-	//console.log(clusterize.getRowsAmount());
 	
 }
 
@@ -717,7 +707,6 @@ function resetCoordinates()
 	{
 		clusterize.clear();
 		clusterize.destroy();
-		//clusterize = null;
 	}
 	
 	generated = false;
