@@ -17,11 +17,13 @@ var polygon = null;
 var polygonCoordinates = [];
 var westToEastDistance = 0;
 var southToNorthDistance = 0;
+var clipboard,distanceSTN,exit,lastLine,countNotFound,currentLat,currentLng,nextLat,nextLng,currentPosition;
+var zoom = 14;
 
 function initMap() {
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: {lat: globalLat, lng: globalLng},
-		zoom: 14
+		zoom: zoom
 	});
 
 	drawingManager = new google.maps.drawing.DrawingManager({
@@ -94,22 +96,9 @@ function setContentHeight()
 {
 	var btnCopyHeight = $('#divBtnCopy').height();
 	var headerHeight = $('#divCoordinateHeader').height();
-	var contentHeigth = $('#map').height() - btnCopyHeight - headerHeight - 15;
+	var contentHeigth = $('#map').height() - headerHeight;
 	$('#contentArea').css('height',contentHeigth+'px');
-}
-
-var oneClick = true;
-
-function copyCoordinates()
-{
-	$('#resultCoordinates').show();
-	if(oneClick)
-	{
-		oneClick = false;
-		$('#btnCopy').click();
-	}
-	
-	$('#resultCoordinates').hide();
+	$('#divBtnCopy').hide();
 }
 
 function createPolygon(data)
@@ -180,26 +169,18 @@ function getDistancePolygon()
 }
 
 function callbackWestToEast(response, status) {
-	if(status == 'OK')
-		westToEastDistance = response.rows[0].elements[0].distance.value;
-	else
-		westToEastDistance = 10000;
+	westToEastDistance = (status == 'OK') ? (response.rows[0].elements[0].distance.value) : 10000;
 }
 
 function callbackSouthToNorth(response, status) {
-	if(status == 'OK')
-		southToNorthDistance = response.rows[0].elements[0].distance.value;
-	else
-		southToNorthDistance = 10000;
+	southToNorthDistance = (status == 'OK') ? (response.rows[0].elements[0].distance.value) : 10000;
 }
 
 function isPolygonValid()
 {
 	var totalDistance = westToEastDistance + southToNorthDistance;
-	if(totalDistance > 4000)
-		return false;
-	else
-		return true;
+	var toReturn = (totalDistance > 4000) ? false : true;
+	return toReturn;
 }
 
 function createShape(data)
@@ -232,22 +213,24 @@ function getInitialPosition()
 {
 
 	var latNew,lngNew;
+	var sCheck = $('#southToNorthS').is(':checked');
+	var wCheck = $('#westToEastW').is(':checked');
 
-	latNew = ($('#southToNorthS').is(':checked')) ? south : north;
-	southToNorth = ($('#southToNorthS').is(':checked')) ? 's' : 'n';
+	latNew = (sCheck) ? south : north;
+	southToNorth = (sCheck) ? 's' : 'n';
 
-	lngNew = ($('#westToEastW').is(':checked')) ? west : east;
-	westToEast = ($('#westToEastW').is(':checked')) ? 'w' : 'e';
+	lngNew = (wCheck) ? west : east;
+	westToEast = (wCheck) ? 'w' : 'e';
 
 	currentPosition = getLatLngFromString(latNew,lngNew);
 	
 	return currentPosition;
 }
 
-function getDistanceSouthToNorth()
+function getDistanceBetweenPoints(start, end)
 {
 	var cantOfPointsSTN = 5;
-	var totalDistance = Math.abs(north - south);
+	var totalDistance = Math.abs(start - end);
 	var result = totalDistance / 5;
 	if(result.toString().length > 7)
 		result = parseFloat(result.toString().substring(0,7));
@@ -255,14 +238,8 @@ function getDistanceSouthToNorth()
 	return result;
 }
 
-function generateCoordinatesRectangle()
+function generateCoordinatesRectangleV()
 {
-	coordinates = [];
-	var distanceSTN = getDistanceSouthToNorth();
-	var exit = false;
-	var countNotFound = 0;
-	var currentLat,currentLng,nextLat,nextLng;
-	var currentPosition = getInitialPosition();
 	do
 	{
 		if(shape.getBounds().contains(currentPosition))
@@ -275,22 +252,12 @@ function generateCoordinatesRectangle()
 				southToNorth = (southToNorth == 's') ? 'n' : 's';
 			}
 
-			if(southToNorth == 's')
-			{
-				currentLat = currentPosition.lat();
-				currentLng = currentPosition.lng();
+			currentLat = currentPosition.lat();
+			currentLng = currentPosition.lng();
 
-				nextLat = currentLat + distanceSTN;
-				nextLng = currentLng;
-			}
-			else
-			{
-				currentLat = currentPosition.lat();
-				currentLng = currentPosition.lng();
-
-				nextLat = currentLat - distanceSTN;
-				nextLng = currentLng;	
-			}
+			nextLat = (southToNorth == 's') ? (currentLat + distanceSTN) : (currentLat - distanceSTN);
+			nextLng = currentLng;
+			
 			currentPosition = getLatLngFromString(nextLat,nextLng);
 		}
 		else
@@ -298,52 +265,29 @@ function generateCoordinatesRectangle()
 			countNotFound++;
 			if(countNotFound < 2)
 			{
-				if(westToEast == 'e')
+				currentLat = currentPosition.lat();
+				currentLng = currentPosition.lng();
+				
+				nextLng = (westToEast == 'e') ? (currentLng - 0.0001) : (currentLng + 0.0001);
+
+				if(currentLat <= north && currentLat >= south)
 				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
-
-					if(currentLat <= north && currentLat >= south)
-					{
-						nextLat = currentLat;							
-					}
-					else
-					{
-						if(southToNorth == 's')
-						{
-							nextLat = currentLat - distanceSTN;
-						}
-						else
-						{
-							nextLat = currentLat + distanceSTN;	
-						}
-					}
-
-					nextLng = currentLng - 0.0001;
+					nextLat = currentLat;							
 				}
 				else
 				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
-
-					if(currentLat <= north && currentLat >= south)
-					{
-						nextLat = currentLat;							
-					}
-					else
-					{
-						if(southToNorth == 's')
-						{
-							nextLat = currentLat - distanceSTN;
-						}
-						else
-						{
-							nextLat = currentLat + distanceSTN;	
-						}
-					}
-
-					nextLng = currentLng + 0.0001;
+					nextLat = (southToNorth == 's') ? (currentLat - distanceSTN) : (currentLat + distanceSTN);
 				}
+
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else if(countNotFound == 2 && !lastLine)
+			{
+				lastLine = true;
+
+				nextLat = (southToNorth == 's') ? (currentLat - distanceSTN) : (currentLat + distanceSTN);
+				nextLng = (westToEast == 'w') ? east : west;
+
 				currentPosition = getLatLngFromString(nextLat,nextLng);
 			}
 			else
@@ -352,23 +296,73 @@ function generateCoordinatesRectangle()
 			}
 		}
 	}while(!exit);
-
-	generated = true;
-
-	chooseDrawType();
-	
 }
 
-function generateCoordinatesPolygon()
+function generateCoordinatesRectangleH()
 {
-	coordinates = [];
-	var distanceSTN = 0.00005;
-	var exit = false;
-	var countNotFound = 0;
-	var currentLat,currentLng,nextLat,nextLng;
-	var currentPosition = getInitialPosition();
 	do
 	{
+		if(shape.getBounds().contains(currentPosition))
+		{
+			coordinates.push(currentPosition);
+
+			if(countNotFound > 0)
+			{
+				countNotFound = 0;
+				westToEast = (westToEast == 'w') ? 'e' : 'w';
+			}
+
+			currentLat = currentPosition.lat();
+			currentLng = currentPosition.lng();
+
+			nextLat = currentLat;
+			nextLng = (westToEast == 'w') ? (currentLng + distanceSTN) : (currentLng - distanceSTN)
+			
+			currentPosition = getLatLngFromString(nextLat,nextLng);
+		}
+		else
+		{
+			countNotFound++;
+			if(countNotFound < 2)
+			{
+				currentLat = currentPosition.lat();
+				currentLng = currentPosition.lng();
+				nextLat = (southToNorth == 's') ? (currentLat + 0.0001) : (currentLat - 0.0001);
+				
+				if(currentLng <= west && currentLng >= east)
+				{
+					nextLng = currentLng;
+				}
+				else
+				{
+					nextLng = (westToEast == 'w') ? (currentLng - distanceSTN) : (currentLng + distanceSTN);
+				}
+
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else if(countNotFound == 2 && !lastLine)
+			{
+				lastLine = true;
+				nextLng = (westToEast == 'w') ? (currentLng - distanceSTN) : (currentLng + distanceSTN);
+				nextLat = (southToNorth == 's') ? north : south;
+
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+	}while(!exit);
+}
+
+function generateCoordinatesPolygonV()
+{
+	do
+	{
+		currentLat = currentPosition.lat();
+		currentLng = currentPosition.lng();
+
 		if(shape.getBounds().contains(currentPosition))
 		{
 			if(google.maps.geometry.poly.containsLocation(currentPosition, polygon))
@@ -382,22 +376,9 @@ function generateCoordinatesPolygon()
 				southToNorth = (southToNorth == 's') ? 'n' : 's';
 			}
 
-			if(southToNorth == 's')
-			{
-				currentLat = currentPosition.lat();
-				currentLng = currentPosition.lng();
-
-				nextLat = currentLat + distanceSTN;
-				nextLng = currentLng;
-			}
-			else
-			{
-				currentLat = currentPosition.lat();
-				currentLng = currentPosition.lng();
-
-				nextLat = currentLat - distanceSTN;
-				nextLng = currentLng;	
-			}
+			nextLat = (southToNorth == 's') ? (currentLat + distanceSTN) : (currentLat - distanceSTN);
+			nextLng = currentLng;
+			
 			currentPosition = getLatLngFromString(nextLat,nextLng);
 		}
 		else
@@ -405,52 +386,17 @@ function generateCoordinatesPolygon()
 			countNotFound++;
 			if(countNotFound < 2)
 			{
-				if(westToEast == 'e')
+				nextLng = (westToEast == 'e') ? (currentLng - 0.0001) : (currentLng + 0.0001);
+
+				if(currentLat <= north && currentLat >= south)
 				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
-
-					if(currentLat <= north && currentLat >= south)
-					{
-						nextLat = currentLat;							
-					}
-					else
-					{
-						if(southToNorth == 's')
-						{
-							nextLat = currentLat - distanceSTN;
-						}
-						else
-						{
-							nextLat = currentLat + distanceSTN;	
-						}
-					}
-
-					nextLng = currentLng - 0.0001;
+					nextLat = currentLat;							
 				}
 				else
 				{
-					currentLat = currentPosition.lat();
-					currentLng = currentPosition.lng();
-
-					if(currentLat <= north && currentLat >= south)
-					{
-						nextLat = currentLat;							
-					}
-					else
-					{
-						if(southToNorth == 's')
-						{
-							nextLat = currentLat - distanceSTN;
-						}
-						else
-						{
-							nextLat = currentLat + distanceSTN;	
-						}
-					}
-
-					nextLng = currentLng + 0.0001;
+					nextLat = (southToNorth == 's') ? (currentLat - distanceSTN) : (currentLat + distanceSTN);
 				}
+				
 				currentPosition = getLatLngFromString(nextLat,nextLng);
 			}
 			else
@@ -459,25 +405,99 @@ function generateCoordinatesPolygon()
 			}
 		}
 	}while(!exit);
+}
 
-	generated = true;
+function generateCoordinatesPolygonH()
+{
+	do
+	{
+		currentLat = currentPosition.lat();
+		currentLng = currentPosition.lng();
 
-	chooseDrawType();
+		if(shape.getBounds().contains(currentPosition))
+		{
+			if(google.maps.geometry.poly.containsLocation(currentPosition, polygon))
+			{
+				coordinates.push(currentPosition);
+			}
+
+			if(countNotFound > 0)
+			{
+				countNotFound = 0;
+				westToEast = (westToEast == 'w') ? 'e' : 'w';
+			}
+
+			nextLng = (westToEast == 'w') ? (currentLng + distanceSTN) : (currentLng - distanceSTN);
+			nextLat = currentLat;
+			
+			currentPosition = getLatLngFromString(nextLat,nextLng);
+		}
+		else
+		{
+			countNotFound++;
+			if(countNotFound < 2)
+			{
+
+				nextLat = (southToNorth == 's') ? (currentLat + 0.0001) : (currentLat - 0.0001);
+
+				if(currentLng <= west && currentLng >= east)
+				{
+					nextLng = currentLng;
+				}
+				else
+				{
+					nextLng = (westToEast == 'w') ? (currentLng - distanceSTN) : (currentLng + distanceSTN);
+				}
+				
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+	}while(!exit);
 }
 
 function generateCoordinates()
 {
+	var horizontalDraw = $('#directionH').is(':checked');
 	if(shape != null && !generated)
 	{
+		exit = false;
+		lastLine = false;
+		countNotFound = 0;
+		currentLat,currentLng,nextLat,nextLng;
+		currentPosition = getInitialPosition();
+		coordinates = [];
 		if(polygon == null)
 		{
-			generateCoordinatesRectangle();
+			if(horizontalDraw)
+			{
+				distanceSTN = getDistanceBetweenPoints(east,west);
+				generateCoordinatesRectangleH();
+			}
+			else
+			{
+				distanceSTN = getDistanceBetweenPoints(north,south);
+				generateCoordinatesRectangleV();
+			}
+
+			generated = true;
+			chooseDrawType();
 		}
 		else
 		{
 			if(isPolygonValid())
 			{
-				generateCoordinatesPolygon();	
+				distanceSTN = 0.00005;
+				if(horizontalDraw)
+					generateCoordinatesPolygonH();
+				else
+					generateCoordinatesPolygonV();
+
+				generated = true;
+				chooseDrawType();
 			}
 			else
 			{
@@ -587,11 +607,9 @@ function drawPath()
 		positionsGenerated[cantOfPositions].setMap(map);
 
 		if(noMorePositions)
-		{
 			timer.stop();
-		}
 
-	},250,true);
+	},250,false);
 }
 
 function showCoordinatesWrap()
@@ -617,16 +635,19 @@ function showCoordinates()
 		data.push(currentData);
 	}
 
-	$('#resultCoordinates').html(valText);
-	$('#btnCopy').click();
-	$('#resultCoordinates').hide();
-
 	clusterize = new Clusterize({
 		rows: data,
 		scrollId: 'scrollArea',
 		contentId: 'contentArea'
 	});
-	
+
+	$('#resultCoordinates').html(valText);
+	$('#resultCoordinates').show();
+	$('#btnCopy').click();
+	$('#resultCoordinates').hide();
+
+	timer.play();
+
 }
 
 function chooseDrawType()
@@ -680,6 +701,33 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos)
 	infoWindow.setContent(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
 }
 
+function cleanCoordinates()
+{
+	if(timer != null)
+	{
+		timer.stop();
+		timer = null;	
+	}
+
+	for(var i = 0; i <= cantOfPositions;i++)
+	{
+		positionsGenerated[i].setMap(null);
+	}
+
+	$('#resultCoordinates').html('');
+
+	if(clusterize != null)
+	{
+		clusterize.clear();
+		clusterize.destroy();
+	}
+	
+	clipboard.destroy();
+	clipboard = new Clipboard('#btnCopy');
+
+	generated = false;
+}
+
 function resetCoordinates()
 {
 	if(timer != null)
@@ -715,6 +763,31 @@ function resetCoordinates()
 		drawingControl: true
 	});
 
+	clipboard.destroy();
+	clipboard = new Clipboard('#btnCopy');
+
+	zoom = map.zoom;
+
 	initMap();
 	
 }
+
+function exportToCsv() {
+	var myCsv = $('#resultCoordinates').html();
+	myCsv = replaceAll('<br>','\n',myCsv);
+	
+	var blob = new Blob([myCsv], {type: 'text/csv'});
+	if(window.navigator.msSaveOrOpenBlob) {
+		window.navigator.msSaveBlob(blob, 'datos.csv');
+	}
+	else{
+		var elem = window.document.createElement('a');
+		elem.href = window.URL.createObjectURL(blob);
+		elem.download = 'datos.csv';
+		document.body.appendChild(elem);
+		elem.click();
+		document.body.removeChild(elem);
+	}
+}
+
+function replaceAll(find, replace,str) { var re = new RegExp(find, 'g'); str = str.replace(re, replace); return str; }
