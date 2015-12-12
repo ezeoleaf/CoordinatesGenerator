@@ -2,6 +2,7 @@ var colors = ['#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF'];
 var map;
 var drawingManager;
 var coordinates = [];
+var timeCoordinates = [];
 var shape = null;
 var south,north,east,west;
 var southToNorth,westToEast,currentPosition;
@@ -19,6 +20,7 @@ var westToEastDistance = 0;
 var southToNorthDistance = 0;
 var clipboard,distanceSTN,exit,lastLine,countNotFound,currentLat,currentLng,nextLat,nextLng,currentPosition;
 var zoom = 14;
+var actualDate;
 
 function initMap() {
 	map = new google.maps.Map(document.getElementById('map'), {
@@ -484,6 +486,7 @@ function generateCoordinates()
 			}
 
 			generated = true;
+			generateTime();
 			chooseDrawType();
 		}
 		else
@@ -497,6 +500,7 @@ function generateCoordinates()
 					generateCoordinatesPolygonV();
 
 				generated = true;
+				generateTime();
 				chooseDrawType();
 			}
 			else
@@ -518,6 +522,40 @@ function generateCoordinates()
 		showNoty('danger','A wild bug appear! Please contact me!');
 	}
 	
+}
+
+function getSecondsPerPoint()
+{
+	var timeFrom = $('#timeFrom').val();
+	var timeTo = $('#timeTo').val();
+
+	var vDate = actualDate.split('-');
+	var vTimeFrom = timeFrom.split(':');
+	var vTimeTo = timeTo.split(':');
+
+	var millisecondsFrom = Date.UTC(vDate[0],vDate[1],vDate[2],vTimeFrom[0],vTimeFrom[1]);
+	var millisecondsTo = Date.UTC(vDate[0],vDate[1],vDate[2],vTimeTo[0],vTimeTo[1]);
+
+	var seconds = (millisecondsTo - millisecondsFrom) / 1000;
+	var secondsPerPoint = parseInt(seconds / coordinates.length);
+	return secondsPerPoint;
+}
+
+function generateTime()
+{
+	secondsPerPoint = getSecondsPerPoint();
+	var dateToCreate = actualDate + ' ' + $('#timeFrom').val() + ':00';
+	var dateToAdd = new Date(dateToCreate)
+
+	for(var i = 0; i < coordinates.length;i++)
+	{
+		if(i != 0)
+		{
+			dateToAdd = dateToAdd.setSeconds(dateToAdd.getSeconds() + secondsPerPoint);
+		}
+
+		timeCoordinates.push(dateToAdd.getFullYear())
+	}
 }
 
 function showNoty(type,text)
@@ -791,3 +829,18 @@ function exportToCsv() {
 }
 
 function replaceAll(find, replace,str) { var re = new RegExp(find, 'g'); str = str.replace(re, replace); return str; }
+
+function setActualDate()
+{
+	var now = new Date();
+	year = now.getFullYear();
+	month = now.getMonth() + 1;
+	day = now.getDate();
+	actualDate = year+'-'+month+'-'+day;
+	$('#dateDay').val(year+'-'+month+'-'+day);
+}
+
+function setChangedDate()
+{
+	actualDate = $('#dateDay').val();
+}
