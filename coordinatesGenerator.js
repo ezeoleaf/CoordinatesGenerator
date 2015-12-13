@@ -541,8 +541,17 @@ function getSecondsPerPoint()
 	return secondsPerPoint;
 }
 
+function setZero(val)
+{
+	if(val < 10)
+		val = '0'+val;
+
+	return val;
+}
+
 function generateTime()
 {
+	timeCoordinates = [];
 	secondsPerPoint = getSecondsPerPoint();
 	var dateToCreate = actualDate + ' ' + $('#timeFrom').val() + ':00';
 	var dateToAdd = new Date(dateToCreate)
@@ -551,10 +560,12 @@ function generateTime()
 	{
 		if(i != 0)
 		{
-			dateToAdd = dateToAdd.setSeconds(dateToAdd.getSeconds() + secondsPerPoint);
+			dateToAdd.setSeconds(dateToAdd.getSeconds() + secondsPerPoint);
 		}
 
-		timeCoordinates.push(dateToAdd.getFullYear())
+		var dateParsed = (dateToAdd.getFullYear()+'-'+setZero(dateToAdd.getMonth() + 1)+'-'+setZero(dateToAdd.getDate())+' '+setZero(dateToAdd.getHours())+':'+setZero(dateToAdd.getMinutes())+':'+setZero(dateToAdd.getSeconds()));
+
+		timeCoordinates.push(dateParsed);
 	}
 }
 
@@ -667,9 +678,9 @@ function showCoordinates()
 
 	for(var i=0;i<coordinates.length;i++)
 	{
-		valText += coordinates[i].lat() +','+coordinates[i].lng() + '<br>';
+		valText += timeCoordinates[i]+','+coordinates[i].lat() +','+coordinates[i].lng() + '<br>';
 
-		var currentData = '<li>'+coordinates[i].lat() +','+coordinates[i].lng() + '</li>';
+		var currentData = '<li>'+timeCoordinates[i]+','+coordinates[i].lat() +','+coordinates[i].lng() + '</li>';
 		data.push(currentData);
 	}
 
