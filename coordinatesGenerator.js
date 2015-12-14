@@ -89,9 +89,24 @@ function initMap() {
 		}
 		});
 		map.fitBounds(bounds);
-		globalLat = bounds.O.O;
-		globalLng = bounds.j.O;
+		var center = getCenter(bounds);
+		globalLat = center.lat();
+		globalLng = center.lng();
 	});
+}
+
+function getCenter(b)
+{
+	var bounds = {
+		southwest: {lat: b.O.O, lng: b.j.O},
+		northeast: {lat: b.O.j, lng: b.j.j}
+	};
+
+	var lat = (bounds.southwest.lat + bounds.northeast.lat)/2;
+	var lng = (bounds.southwest.lng + bounds.northeast.lng)/2;
+
+	var centerToReturn = getLatLngFromString(lat.toString(),lng.toString());
+	return centerToReturn;
 }
 
 function setContentHeight()
@@ -675,12 +690,19 @@ function showCoordinates()
 {
 	var data = [];
 	var valText = '';
-
+	var showDates = $('#showDates').is(':checked');
 	for(var i=0;i<coordinates.length;i++)
 	{
-		valText += timeCoordinates[i]+','+coordinates[i].lat() +','+coordinates[i].lng() + '<br>';
+		var currentData = '<li>';
+		if(showDates)
+		{
+			valText += timeCoordinates[i]+',';
+			currentData += timeCoordinates[i]+',';
+		}
 
-		var currentData = '<li>'+timeCoordinates[i]+','+coordinates[i].lat() +','+coordinates[i].lng() + '</li>';
+		valText += coordinates[i].lat() +','+coordinates[i].lng() + '<br>';
+
+		currentData += coordinates[i].lat() +','+coordinates[i].lng() + '</li>';
 		data.push(currentData);
 	}
 
