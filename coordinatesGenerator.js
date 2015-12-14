@@ -21,6 +21,7 @@ var southToNorthDistance = 0;
 var clipboard,distanceSTN,exit,lastLine,countNotFound,currentLat,currentLng,nextLat,nextLng,currentPosition;
 var zoom = 14;
 var actualDate;
+var circle = null;
 
 function initMap() {
 	map = new google.maps.Map(document.getElementById('map'), {
@@ -33,7 +34,7 @@ function initMap() {
 		drawingControlOptions: {
 		  position: google.maps.ControlPosition.TOP_CENTER,
 		  drawingModes: [
-		    //google.maps.drawing.OverlayType.CIRCLE,
+		    google.maps.drawing.OverlayType.CIRCLE,
 		    google.maps.drawing.OverlayType.POLYGON,
 		    google.maps.drawing.OverlayType.RECTANGLE
 		  ]
@@ -43,7 +44,7 @@ function initMap() {
 	drawingManager.setMap(map);
 
 	google.maps.event.addListener(drawingManager, 'circlecomplete', function(circle) {
-		createShape(circle);
+		createCircle(circle);
 	});
 
 	google.maps.event.addListener(drawingManager, 'rectanglecomplete', function(event) {
@@ -116,6 +117,31 @@ function setContentHeight()
 	var contentHeigth = $('#map').height() - headerHeight;
 	$('#contentArea').css('height',contentHeigth+'px');
 	$('#divBtnCopy').hide();
+}
+
+function createCircle(data)
+{
+	var d = data;
+	south = data.getBounds().O.O;
+	north = data.getBounds().O.j;
+	east = data.getBounds().j.O;
+	west = data.getBounds().j.j;
+
+	circle = new google.maps.Circle({center: data.getCenter(),radius: data.getRadius()});
+
+	shape = new google.maps.Rectangle({
+		bounds: {
+			north: north,
+			south: south,
+			east: east,
+			west: west
+		}
+	});
+
+
+	getDistancePolygon();
+
+	drawingManager.setMap(null);
 }
 
 function createPolygon(data)
@@ -476,6 +502,117 @@ function generateCoordinatesPolygonH()
 	}while(!exit);
 }
 
+function generateCoordinatesCircleV()
+{
+	do
+	{
+		currentLat = currentPosition.lat();
+		currentLng = currentPosition.lng();
+
+		if(shape.getBounds().contains(currentPosition))
+		{
+			var distanceToCenter = google.maps.geometry.spherical.computeDistanceBetween(circle.getCenter(),currentPosition);
+			if(circle.getBounds().contains(currentPosition) && (distanceToCenter < circle.radius))
+			{
+				coordinates.push(currentPosition);
+			}
+
+			if(countNotFound > 0)
+			{
+				countNotFound = 0;
+				southToNorth = (southToNorth == 's') ? 'n' : 's';
+			}
+
+			nextLat = (southToNorth == 's') ? (currentLat + distanceSTN) : (currentLat - distanceSTN);
+			nextLng = currentLng;
+			
+			currentPosition = getLatLngFromString(nextLat,nextLng);
+		}
+		else
+		{
+			countNotFound++;
+			if(countNotFound < 2)
+			{
+				nextLng = (westToEast == 'e') ? (currentLng - 0.0001) : (currentLng + 0.0001);
+
+				if(currentLat <= north && currentLat >= south)
+				{
+					nextLat = currentLat;							
+				}
+				else
+				{
+					nextLat = (southToNorth == 's') ? (currentLat - distanceSTN) : (currentLat + distanceSTN);
+				}
+				
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+	}while(!exit);
+}
+
+function generateCoordinatesCircleH()
+{
+	do
+	{
+		currentLat = currentPosition.lat();
+		currentLng = currentPosition.lng();
+
+		if(shape.getBounds().contains(currentPosition))
+		{
+			var distanceToCenter = google.maps.geometry.spherical.computeDistanceBetween(circle.getCenter(),currentPosition);
+			if(circle.getBounds().contains(currentPosition) && (distanceToCenter < circle.radius))
+			{
+				coordinates.push(currentPosition);
+			}
+
+			if(countNotFound > 0)
+			{
+				countNotFound = 0;
+				westToEast = (westToEast == 'w') ? 'e' : 'w';
+			}
+
+			nextLng = (westToEast == 'w') ? (currentLng + distanceSTN) : (currentLng - distanceSTN);
+			nextLat = currentLat;
+			
+			currentPosition = getLatLngFromString(nextLat,nextLng);
+		}
+		else
+		{
+			countNotFound++;
+			if(countNotFound < 2)
+			{
+
+				nextLat = (southToNorth == 's') ? (currentLat + 0.0001) : (currentLat - 0.0001);
+
+				if(currentLng <= west && currentLng >= east)
+				{
+					nextLng = currentLng;
+				}
+				else
+				{
+					nextLng = (westToEast == 'w') ? (currentLng - distanceSTN) : (currentLng + distanceSTN);
+				}
+				
+				currentPosition = getLatLngFromString(nextLat,nextLng);
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+	}while(!exit);
+}
+
+/*
+google.maps.Circle.prototype.contains = function(latLng) {
+  return this.getBounds().contains(latLng) && google.maps.geometry.spherical.computeDistanceBetween(this.getCenter(), latLng) <= this.getRadius();
+}
+*/
+
 function generateCoordinates()
 {
 	var horizontalDraw = $('#directionH').is(':checked');
@@ -487,7 +624,7 @@ function generateCoordinates()
 		currentLat,currentLng,nextLat,nextLng;
 		currentPosition = getInitialPosition();
 		coordinates = [];
-		if(polygon == null)
+		if(polygon == null && circle == null)
 		{
 			if(horizontalDraw)
 			{
@@ -504,7 +641,7 @@ function generateCoordinates()
 			generateTime();
 			chooseDrawType();
 		}
-		else
+		else if(circle == null)
 		{
 			if(isPolygonValid())
 			{
@@ -522,7 +659,26 @@ function generateCoordinates()
 			{
 				showNoty('danger','For performance purpoise, please draw a smaller polygon or a rectangle');
 			}
-		}	
+		}
+		else
+		{
+			if(isPolygonValid())
+			{
+				distanceSTN = 0.00005;
+				if(horizontalDraw)
+					generateCoordinatesCircleH();
+				else
+					generateCoordinatesCircleV();
+
+				generated = true;
+				generateTime();
+				chooseDrawType();
+			}
+			else
+			{
+				showNoty('danger','For performance purpoise, please draw a smaller polygon or a rectangle');
+			}
+		}
 	}
 	else if(shape == null)
 	{
@@ -821,6 +977,7 @@ function resetCoordinates()
 	}
 
 	polygon = null;
+	circle = null;
 
 	if(clusterize != null)
 	{
