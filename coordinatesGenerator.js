@@ -1026,8 +1026,10 @@ function setActualDate()
 	year = now.getFullYear();
 	month = now.getMonth() + 1;
 	day = now.getDate();
+	if(month.toString().length == 1) month = '0'+month;
+	if(day.toString().length == 1) day = '0'+day;
 	actualDate = year+'-'+month+'-'+day;
-	$('#dateDay').val(year+'-'+month+'-'+day);
+	$('#dateDay').val(actualDate);
 }
 
 function setChangedDate()
