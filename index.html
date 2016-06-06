@@ -20,10 +20,12 @@
 	<script src="coordinatesGenerator.js"></script>
 	<script>
 	$(document).ready(function(){
+		
 		initMap();
 		clipboard = new Clipboard('#btnCopy');
 		setContentHeight();
 		setActualDate();
+		
 	})
 	</script>
 </head>
@@ -40,12 +42,6 @@
 			<h1 id="headerText">Coordinate Generator</h1>
 		</div>
 		<div class="row col-xs-12 col-sm-12 col-md-12" align="center">
-			<button type="button" class="btn btn-success" onClick="locateMe();">Locate Me!</button>
-			
-		</div>
-		<br>
-		<br>
-		<div class="row col-xs-12 col-sm-12 col-md-12" align="center">
 			<input id="pac-input" class="controls form-control" type="text" placeholder="Search Box">
 		</div>
 		<br>
@@ -55,13 +51,15 @@
 				<div id="map">
 					
 				</div>
-				<div class="row col-xs-12">
-					<div class="col-xs-6 col-md-2">
-						<div>
-							<label>
-								Direction
-							</label>
-						</div>
+			</div>
+			<div class="col-xs-12 col-sm-12 col-md-4">
+				<div class="row col-xs-6 col-md-12">
+					<div class="col-xs-4">
+						<br><label>
+							Direction
+						</label>
+					</div>
+					<div class="col-xs-8">
 						<div class="radio">
 						<label>
 							<input type="radio" name="direction" id="directionH" value="h" checked>
@@ -75,67 +73,93 @@
 						</label>
 						</div>
 					</div>
-					<div class="col-xs-6 col-md-3">
-						<div>
-							<label>
-								From
-							</label>
-						</div>
+				</div>
+				<div class="row col-xs-6 col-md-12">
+					<div class="col-xs-3">
+						<br><label>
+							From
+						</label>
+					</div>
+					<div class="col-xs-9">
 						<div class="radio">
 						<label>
 							<input type="radio" name="bottomToTop" id="southToNorthS" value="s" checked>
-							South
+							South to North
 						</label>
 						</div>
 						<div class="radio">
 						<label>
 							<input type="radio" name="bottomToTop" id="southToNorthN" value="n">
-							North
+							North to South
 						</label>
 						</div>
 					</div>
-					<div class="col-xs-5 col-md-3">
-						<div>
-							<label>
-								From
-							</label>
-						</div>
+				</div>
+				<div class="row col-xs-6 col-md-12">
+					<div class="col-xs-3">
+						<br><label>
+							From
+						</label>
+					</div>
+					<div class="col-xs-9">
 						<div class="radio">
 						<label>
 							<input type="radio" name="leftToRight" id="westToEastW" value="w" checked>
-							West
+							West to East
 						</label>
 						</div>
 						<div class="radio">
 						<label>
 							<input type="radio" name="leftToRight" id="westToEastE" value="e">
-							East
+							East to West
 						</label>
 						</div>
 					</div>
-					<div class="col-xs-7 col-md-4">
-						<div class="row">
-							<label>
-								Time &nbsp;&nbsp;
-							</label>
-							<input type="checkbox" id="showDates" checked> Show Dates
+				</div>
+				<div class="row col-xs-6 col-md-12">
+					<div class="col-xs-3">
+						<br><label>
+							Time
+						</label>
+					</div>
+					<div class="col-xs-9">
+						<div>
+							<input type="checkbox" id="showDates" checked><label for="showDates"> Show Dates</label>
 						</div>
-						<div class="row">
-						  Date: &nbsp;<input type="date" id="dateDay" onchange="setChangedDate()">
+						<div>
+						Date: &nbsp;<input type="date" id="dateDay" onchange="setChangedDate()">
 						</div>
-						<div class="row">
-						  From: <input type="time" id="timeFrom" value="00:00"> to <input id="timeTo" type="time" value="23:59">
+						<div>
+						From: <input type="time" id="timeFrom" value="00:00"> to <input id="timeTo" type="time" value="23:59">
 						</div>
 					</div>
 				</div>
-				<div class="row col-xs-12" align="center">
-					<button type="button" class="btn btn-primary" onClick="resetCoordinates();">Reset</button>
-					<button type="button" class="btn btn-primary" onClick="cleanCoordinates();">Clean</button>
-					<button type="button" class="btn btn-primary" onClick="generateCoordinates();">Generate</button>
-					<br/><br/>
+				<div class="row col-xs-6 col-md-12">
+					<div class="col-xs-4">
+						<br><label>
+							Distance between points
+						</label>
+					</div>
+					<div class="col-xs-8">
+						<br><div class="col-xs-8">
+							<input type="number" id="distancePoint" min="5" maxlength="3" max="1000"/>
+						</div>
+						<div class="col-xs-4">
+							mts.
+						</div>
+					</div>
 				</div>
 			</div>
-			<div class="col-xs-12 col-sm-12 col-md-4">
+		</div>
+		<div class="row col-xs-12" align="center">
+			<br/>
+			<button type="button" class="btn btn-primary" onClick="resetCoordinates();">Reset</button>
+			<button type="button" class="btn btn-primary" onClick="cleanCoordinates();">Clean</button>
+			<button type="button" class="btn btn-primary" onClick="generateCoordinates();">Generate</button>
+			<button type="button" class="btn btn-success" onClick="exportToCsv();">Download!</button>
+			<br/><br/>
+		</div>
+			<div class="col-xs-12 col-sm-12 col-md-12">
 				<div class="form-group">
 					<div class="col-xs-12 bg-info" align="center" id="divCoordinateHeader">
 						<label>Coordinates</label>
@@ -153,10 +177,6 @@
 					</div>
 					<div id="resultCoordinates"></div>
 					<!--textarea class="form-control" id="resultCoordinates" style="width:100%;height:0px" rows="0">Coordinates</textarea-->
-				</div>
-				<div class="row col-xs-12" align="center">
-					<button type="button" class="btn btn-success" onClick="exportToCsv();">Download!</button>
-					<br/><br/>
 				</div>
 			</div>
 		</div>
